@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>Только правда</title>
+<style>
+:root{--bg:#0a0a0a;--ink:#e8e2d4;--mu:#8a857a;--ln:#3a3a38;--red:#b3262b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif}
+body{max-width:560px;margin:auto;padding:max(16px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom))}
+.mast{text-align:center;border-top:3px double var(--ink);border-bottom:1px solid var(--ink);padding:10px 0 12px;margin-bottom:6px}
+.iss{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mu)}
+h1{margin:6px 0 2px;font-size:clamp(34px,10vw,52px);font-weight:400;letter-spacing:6px;text-transform:uppercase;cursor:pointer;user-select:none}
+.sub{font-style:italic;color:var(--mu);font-size:14px}
+label,.sec{display:block;margin:22px 0 8px;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--mu);border-bottom:1px solid var(--ln);padding-bottom:6px}
+input,textarea,select{width:100%;background:transparent;border:0;border-bottom:1px solid var(--ink);color:var(--ink);padding:10px 2px;font:italic 18px Georgia,serif;border-radius:0}
+textarea{border:1px solid var(--ln);padding:10px;font-size:16px}
+select{font-style:normal;font-size:16px}option{background:#111}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:transparent;color:var(--ink);border:1px solid var(--ln);padding:9px 12px;font:14px Georgia,serif;cursor:pointer}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:flex;gap:10px;margin:10px 0}
+button{font-family:Georgia,serif}
+.btn{flex:1;background:transparent;color:var(--ink);border:1px solid var(--ink);padding:14px 8px;font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer}
+.btn:active{background:var(--ink);color:var(--bg)}
+.play{width:100%;margin:26px 0 8px;background:var(--ink);color:var(--bg);border:0;padding:20px;font-size:22px;letter-spacing:8px;text-transform:uppercase;cursor:pointer}
+.play:active{background:var(--red);color:var(--ink)}
+small{display:block;color:var(--mu);font-style:italic;margin:8px 0}
+code{color:var(--ink);font-style:normal}
+#wheelBox{position:relative;width:min(78vw,300px);margin:18px auto 6px}
+#wheelBox:before{content:"";position:absolute;left:50%;top:-6px;margin-left:-9px;border:9px solid transparent;border-top:16px solid var(--red);z-index:2}
+#wheel{width:100%;height:auto;display:block}
+#stage{position:relative;height:42vh;min-height:250px;margin:14px 0;touch-action:pan-y}
+.card{position:absolute;inset:0;background:var(--bg);border:1px solid var(--ink);padding:20px;display:flex;flex-direction:column;justify-content:space-between;user-select:none;transition:transform .25s,opacity .25s}
+.card:before{content:"";position:absolute;inset:5px;border:1px solid var(--ln);pointer-events:none}
+.tag{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mu)}
+.q{font-size:clamp(20px,5.6vw,27px);line-height:1.32;overflow:auto;padding:6px 0}
+.who{font-style:italic;color:var(--mu)}.who b{color:var(--ink);font-weight:400;border-bottom:1px solid var(--red)}
+.hint{text-align:center;color:var(--mu);font-size:12px;font-style:italic}
+dialog{background:var(--bg);color:var(--ink);border:1px solid var(--ink);width:min(92vw,520px);padding:20px}
+dialog::backdrop{background:#000c}
+.letter{white-space:pre-line;line-height:1.55;font-size:17px;border-top:3px double var(--ink);padding-top:12px;margin-top:6px}
+.letter i{color:var(--mu)}
+</style>
+</head>
+<body>
+
+<header class="mast">
+<div class="iss">Выпуск № 01 · Только вопросы</div>
+<h1 id="ttl">Только правда</h1>
+<div class="sub">Никаких «да» и «нет». Только истории.</div>
+</header>
+
+<div id="menu">
+<label for="names">Имена игроков: Sandro, Назар, Ростикс</label>
+<input id="names" placeholder="Sandro, Назар, Ростикс" autocomplete="off">
+<div class="sec">Рубрики</div>
+<div class="chips" id="chips"></div>
+<small id="cnt"></small>
+<div class="row"><button class="btn" id="bAdd">Добавить свой вопрос вручную</button></div>
+<div class="row"><button class="btn" id="bImp">Загрузить JSON-пак</button></div>
+<button class="play" id="bPlay">Играть!</button>
+</div>
+
+<div id="game" hidden>
+<div class="row"><button class="btn" id="bBack">← В меню / Настройки</button></div>
+<div id="wheelBox"><canvas id="wheel" width="640" height="640"></canvas></div>
+<div id="stage"></div>
+<div class="hint">Свайп по карточке или кнопка — крутим колесо дальше</div>
+<div class="row"><button class="btn" id="bNext">Крутить дальше</button><button class="btn" id="bSay">Озвучить</button></div>
+</div>
+
+<dialog id="dAdd">
+<b>Свой вопрос</b>
+<label for="selCat">Рубрика</label><select id="selCat"></select>
+<label for="myQ">Текст вопроса</label><textarea id="myQ" rows="4"></textarea>
+<small id="msgA"></small>
+<div class="row"><button class="btn" id="bAClose">Закрыть</button><button class="btn" id="bASave">Сохранить</button></div>
+</dialog>
+
+<dialog id="dlg">
+<b>Загрузить JSON-пак</b>
+<small>Формат: <code>{"Моя рубрика":["вопрос 1","вопрос 2"]}</code> или список <code>[{"cat":"Рубрика","q":"Вопрос"}]</code>. Вставь текст или выбери файл.</small>
+<textarea id="txt" rows="6"></textarea>
+<div class="row"><input type="file" id="file" accept=".json,application/json"></div>
+<small id="msg"></small>
+<div class="row"><button class="btn" id="bClose">Закрыть</button><button class="btn" id="bLoad">Загрузить</button></div>
+<div class="row"><button class="btn" id="bReset">Удалить свои вопросы</button></div>
+</dialog>
+
+<dialog id="dLet">
+<div class="iss">Редакция · Письмо редактора</div>
+<div class="letter" id="letter"></div>
+<div class="row"><button class="btn" id="bLetClose">Закрыть выпуск</button></div>
+</dialog>
+
+<script>
+const FB={l:["Расскажи про самое нелепое и неловкое свидание в твоей жизни от начала до конца.","Какие красные флаги в людях ты долго игнорировал и во что это тебе вылилось?"],d:["Какую часть себя ты прячешь от большинства людей и почему?","Что бы ты сказал себе пятнадцатилетнему, если бы мог встретиться?"],p:["Расскажи, как ты на самом деле относишься к каждому из нас, без смягчений.","Что в нашей компании тебя напрягает, но ты никогда не говорил об этом вслух?"],o:["Расскажи про самый нелепый случай, когда ты опозорился при куче людей.","Какую странную привычку ты скрываешь от большинства людей?"]};
+const M0={l:"I. Личное и отношения",d:"II. Глубокие загоны и философия",p:"III. Провокации для компании",o:"IV. Оффтоп и дичь"};
+const LET=["Дорогой читатель!\n\nМы потратили много бессонных ночей, чтобы вы потратили одну неловкую минуту. Редакция довольна результатом.\n\nПомните: правда не требует украшений, ей нужна лишь секунда тишины после ответа.\n\nС уважением,\nглавный редактор",
+"Уважаемые игроки!\n\nРедакция получила тысячи писем с одной и той же просьбой: «Только не меня». Мы отклонили их все.\n\nОтвечайте честно, а если не хочется, отвечайте подробно: это тоже искусство.\n\nИскренне ваш,\nглавный редактор",
+"Друзья!\n\nВы нашли тайную страницу выпуска. Её никто не читает, поэтому здесь можно сказать главное: хорошая компания измеряется не шутками, а тем, что в ней не страшно быть настоящим.\n\nНа этом всё. Ниже вопрос для вас.\n\nГлавный редактор"];
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const ld=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let META={},bank={},active=new Set(),deck=[],qi=-1,custom={},remote={},cardEl=null,P=[],rot=0,busy=false;
+
+function rebuildBank(){
+  META=Object.assign({},M0);bank={};
+  for(const k in FB)bank[k]=FB[k].slice();
+  for(const src of [remote,custom])for(const k in src){
+    if(!META[k])META[k]="✦ "+k;
+    bank[k]=[...new Set((bank[k]||[]).concat(src[k]))];
+  }
+  active=new Set([...active].filter(k=>bank[k]));
+  if(!active.size)active=new Set(Object.keys(bank));
+  drawChips();$("selCat").innerHTML=Object.keys(bank).map(k=>`<option value="${esc(k)}">${esc(META[k])}</option>`).join("");
+}
+function drawChips(){
+  $("chips").innerHTML="";let total=0;
+  for(const k in bank){
+    if(active.has(k))total+=bank[k].length;
+    const b=document.createElement("button");b.className="chip"+(active.has(k)?" on":"");
+    b.textContent=META[k]+" · "+bank[k].length;
+    b.onclick=()=>{active.has(k)?active.delete(k):active.add(k);if(!active.size)active.add(k);drawChips()};
+    $("chips").appendChild(b);
+  }
+  $("cnt").textContent="Вопросов в выпуске: "+total;
+}
+function shuffle(a){for(let j=a.length-1;j>0;j--){const r=Math.floor(Math.random()*(j+1));[a[j],a[r]]=[a[r],a[j]]}return a}
+const players=()=>$("names").value.split(",").map(s=>s.trim()).filter(Boolean);
+
+/* колесо */
+function drawWheel(r,hl){
+  const c=$("wheel"),x=c.getContext("2d"),S=c.width,R=S/2-6,n=P.length||1,s=2*Math.PI/n;
+  x.clearRect(0,0,S,S);x.save();x.translate(S/2,S/2);
+  for(let k=0;k<n;k++){
+    const a=r+k*s;x.beginPath();x.moveTo(0,0);x.arc(0,0,R,a,a+s);x.closePath();
+    x.fillStyle=k===hl?"#e8e2d4":(k%2?"#171716":"#0f0f0e");x.fill();x.strokeStyle="#4a4a46";x.lineWidth=1.5;x.stroke();
+    x.save();x.rotate(a+s/2);x.textAlign="right";x.fillStyle=k===hl?"#0a0a0a":"#e8e2d4";x.font="italic 46px Georgia,serif";x.fillText(P[k]||"",R-26,15,R-90);x.restore();
+  }
+  x.beginPath();x.arc(0,0,R,0,7);x.strokeStyle="#e8e2d4";x.lineWidth=2;x.stroke();
+  x.beginPath();x.arc(0,0,18,0,7);x.fillStyle="#0a0a0a";x.fill();x.stroke();x.restore();
+}
+function spin(idx,cb){
+  const s=2*Math.PI/P.length,base=-Math.PI/2-(idx+.5)*s,f2=2*Math.PI;
+  const d=((base-rot)%f2+f2)%f2+f2*(4+Math.floor(Math.random()*2)),r0=rot,t0=performance.now(),T=3300;
+  (function f(t){const p=Math.min(1,(t-t0)/T),e=1-Math.pow(1-p,4);rot=r0+d*e;drawWheel(rot,p>=1?idx:-1);p<1?requestAnimationFrame(f):cb()})(t0);
+}
+
+/* карточки */
+function showCard(who){
+  qi++;if(qi>=deck.length){shuffle(deck);qi=0}
+  const it=deck[qi],st=$("stage");st.innerHTML="";
+  cardEl=document.createElement("div");cardEl.className="card";
+  cardEl.innerHTML=`<div class="tag">${esc(META[it.k])}</div><div class="q">${esc(it.q)}</div><div class="who">${who?`Вопрос для <b>${esc(who)}</b>`:"&nbsp;"}</div>`;
+  cardEl.dataset.who=who||"";st.appendChild(cardEl);bindSwipe(cardEl);busy=false;
+}
+function nextTurn(){
+  if(busy)return;busy=true;
+  if("speechSynthesis" in window)speechSynthesis.cancel();
+  if(cardEl){cardEl.style.opacity=0;cardEl.style.transform="translateY(14px)"}
+  if(!P.length){setTimeout(()=>showCard(""),200);return}
+  const idx=Math.floor(Math.random()*P.length);
+  setTimeout(()=>spin(idx,()=>setTimeout(()=>showCard(P[idx]),350)),200);
+}
+function bindSwipe(el){
+  let x0=null,dx=0;
+  el.addEventListener("pointerdown",e=>{x0=e.clientX;dx=0;el.style.transition="none";el.setPointerCapture(e.pointerId)});
+  el.addEventListener("pointermove",e=>{if(x0===null)return;dx=e.clientX-x0;el.style.transform=`translateX(${dx}px) rotate(${dx/30}deg)`});
+  const end=()=>{if(x0===null)return;x0=null;el.style.transition="";if(Math.abs(dx)>80)nextTurn();else el.style.transform=""};
+  el.addEventListener("pointerup",end);el.addEventListener("pointercancel",end);
+}
+$("bPlay").onclick=()=>{
+  P=players();deck=[];active.forEach(k=>bank[k].forEach(q=>deck.push({k,q})));shuffle(deck);qi=-1;busy=false;cardEl=null;rot=0;
+  $("stage").innerHTML="";$("wheelBox").hidden=!P.length;
+  $("menu").hidden=true;$("game").hidden=false;window.scrollTo(0,0);
+  if(P.length)drawWheel(0,-1);nextTurn();
+};
+$("bBack").onclick=()=>{if("speechSynthesis" in window)speechSynthesis.cancel();$("game").hidden=true;$("menu").hidden=false};
+$("bNext").onclick=nextTurn;
+$("bSay").onclick=()=>{
+  if(!("speechSynthesis" in window)||!cardEl){return}
+  speechSynthesis.cancel();const w=cardEl.dataset.who;
+  const u=new SpeechSynthesisUtterance((w?"Вопрос для "+w+". ":"")+deck[qi].q);u.lang="ru-RU";u.rate=.95;
+  const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("ru"));if(v)u.voice=v;speechSynthesis.speak(u);
+};
+$("names").value=ld("tp_names")||"";
+$("names").oninput=()=>sv("tp_names",$("names").value);
+
+/* пасхалка: 5 быстрых нажатий на заголовок */
+let tt=0,tmr;
+$("ttl").onclick=()=>{
+  tt++;clearTimeout(tmr);tmr=setTimeout(()=>tt=0,1800);
+  if(tt>=5){
+    tt=0;const all=[].concat(...Object.values(bank));
+    $("letter").innerHTML=esc(pick(LET))+`\n\n<i>Вопрос от редакции:</i>\n${esc(pick(all))}`;
+    $("dLet").showModal();
+  }
+};
+$("bLetClose").onclick=()=>$("dLet").close();
+
+/* свой вопрос и импорт */
+$("bAdd").onclick=()=>{$("msgA").textContent="";$("dAdd").showModal()};
+$("bAClose").onclick=()=>$("dAdd").close();
+$("bASave").onclick=()=>{
+  const q=$("myQ").value.trim(),c=$("selCat").value;
+  if(!q){$("msgA").textContent="Впиши текст вопроса";return}
+  (custom[c]=custom[c]||[]).push(q);sv("tp_custom",custom);rebuildBank();$("myQ").value="";$("msgA").textContent="Вопрос добавлен";
+};
+$("bImp").onclick=()=>{$("msg").textContent="";$("dlg").showModal()};
+$("bClose").onclick=()=>$("dlg").close();
+$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("txt").value=r.result};r.readAsText(f)};
+$("bLoad").onclick=()=>{
+  try{
+    const d=JSON.parse($("txt").value);let add={},n=0;
+    const put=(c,q)=>{if(typeof q==="string"&&q.trim()){c=c||"Мои вопросы";(add[c]=add[c]||[]).push(q.trim());n++}};
+    if(Array.isArray(d))d.forEach(x=>typeof x==="string"?put("Мои вопросы",x):put(x.cat||x.category||x.c,x.q||x.question||x.text));
+    else for(const c in d)(Array.isArray(d[c])?d[c]:[]).forEach(q=>put(c,q));
+    if(!n)throw new Error("нет вопросов");
+    for(const c in add)custom[c]=(custom[c]||[]).concat(add[c]);
+    sv("tp_custom",custom);rebuildBank();$("msg").textContent="Добавлено вопросов: "+n;$("txt").value="";
+  }catch(e){$("msg").textContent="Ошибка: проверь формат JSON ("+e.message+")"}
+};
+$("bReset").onclick=()=>{if(confirm("Удалить все свои и импортированные вопросы?")){custom={};sv("tp_custom",custom);rebuildBank();$("dlg").close()}};
+
+/* вопросы из папки questions/ */
+async function loadRemote(){
+  try{
+    const m=await(await fetch("questions/packs.json",{cache:"no-store"})).json(),r={};
+    for(const k in m){const a=await(await fetch("questions/"+m[k],{cache:"no-store"})).json();if(Array.isArray(a))r[k]=a.filter(x=>typeof x==="string"&&x.trim())}
+    remote=r;sv("tp_remote",r);rebuildBank();
+  }catch(e){}
+}
+custom=ld("tp_custom")||{};remote=ld("tp_remote")||{};
+rebuildBank();loadRemote();
+</script>
+</body>
+</html>
